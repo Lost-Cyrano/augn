@@ -2,14 +2,16 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AUGN Game - Cable Repair</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Réparation des câbles - Among Us</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
         }
         
         body {
@@ -20,95 +22,97 @@
             align-items: center;
             justify-content: center;
             min-height: 100vh;
-            padding: 20px;
+            padding: 15px;
+            overflow-x: hidden;
         }
         
         .container {
-            max-width: 800px;
             width: 100%;
+            max-width: 100%;
             background-color: #16213e;
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
             text-align: center;
-            position: relative;
         }
         
         h1 {
             color: #e94560;
-            margin-bottom: 20px;
-            font-size: 2.5rem;
+            margin-bottom: 15px;
+            font-size: 1.8rem;
             text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
         
         .instructions {
             background-color: #0f3460;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 25px;
-            line-height: 1.6;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            line-height: 1.5;
+            font-size: 0.9rem;
         }
         
         .game-area {
             display: flex;
-            justify-content: space-between;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
+            flex-direction: column;
+            gap: 20px;
+            margin-bottom: 20px;
         }
         
         .cable-column {
             display: flex;
             flex-direction: column;
             align-items: center;
-            width: 45%;
+            width: 100%;
         }
         
         .cable-column h2 {
-            margin-bottom: 15px;
+            margin-bottom: 12px;
             color: #e94560;
+            font-size: 1.2rem;
+        }
+        
+        .cable-row {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-bottom: 10px;
         }
         
         .cable-socket {
-            width: 100%;
-            height: 50px;
+            width: 45%;
+            height: 45px;
             background-color: #0f3460;
-            border-radius: 8px;
-            margin: 10px 0;
+            border-radius: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
             position: relative;
             overflow: hidden;
-            cursor: pointer;
         }
         
         .cable-socket::after {
             content: '';
             position: absolute;
-            width: 20px;
-            height: 20px;
+            width: 16px;
+            height: 16px;
             background-color: #1a1a2e;
             border-radius: 50%;
         }
         
         .cable {
-            width: 15px;
-            height: 15px;
+            width: 22px;
+            height: 22px;
             border-radius: 50%;
-            margin: 5px;
-            cursor: grab;
+            cursor: pointer;
             transition: transform 0.2s;
             position: relative;
             z-index: 10;
+            touch-action: none;
         }
         
-        .cable:hover {
+        .cable:active {
             transform: scale(1.1);
-        }
-        
-        .cable.dragging {
-            opacity: 0.7;
-            cursor: grabbing;
         }
         
         .cable.red { background-color: #e94560; }
@@ -120,7 +124,7 @@
         
         .cable-line {
             position: absolute;
-            height: 5px;
+            height: 6px;
             background-color: inherit;
             z-index: 5;
             pointer-events: none;
@@ -128,11 +132,12 @@
         }
         
         .message {
-            margin-top: 20px;
-            padding: 15px;
-            border-radius: 8px;
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 6px;
             font-weight: bold;
             display: none;
+            font-size: 0.9rem;
         }
         
         .message.success {
@@ -146,15 +151,27 @@
             color: #e94560;
             display: block;
         }
-        
-        @media (max-width: 600px) {
+
+        @media (min-width: 768px) {
+            .container {
+                max-width: 500px;
+            }
+            
             .game-area {
-                flex-direction: column;
+                flex-direction: row;
             }
             
             .cable-column {
+                width: 48%;
+            }
+            
+            .cable-row {
+                flex-direction: column;
+            }
+            
+            .cable-socket {
                 width: 100%;
-                margin-bottom: 20px;
+                margin-bottom: 15px;
             }
         }
     </style>
@@ -164,19 +181,22 @@
         <h1>Réparation des câbles</h1>
         
         <div class="instructions">
-            <p>Connectez les câbles de la même couleur pour rétablir l'alimentation électrique.</p>
-            <p>Faites glisser les câbles de la colonne de gauche vers la colonne de droite.</p>
+            <p>👆 Touchez et maintenez un câble, puis glissez-le vers le connecteur de même couleur</p>
         </div>
         
         <div class="game-area">
             <div class="cable-column" id="left-column">
-                <h2>Câbles déconnectés</h2>
-                <!-- Les câbles seront générés par JavaScript -->
+                <h2>Câbles</h2>
+                <div class="cable-row" id="left-cables">
+                    <!-- Les câbles seront générés par JavaScript -->
+                </div>
             </div>
             
             <div class="cable-column" id="right-column">
                 <h2>Connecteurs</h2>
-                <!-- Les connecteurs seront générés par JavaScript -->
+                <div class="cable-row" id="right-connectors">
+                    <!-- Les connecteurs seront générés par JavaScript -->
+                </div>
             </div>
         </div>
         
@@ -194,138 +214,146 @@
         let totalPairs = colors.length;
         
         // Éléments du DOM
-        const leftColumn = document.getElementById('left-column');
-        const rightColumn = document.getElementById('right-column');
+        const leftCables = document.getElementById('left-cables');
+        const rightConnectors = document.getElementById('right-connectors');
         const messageEl = document.getElementById('message');
         
         // État du jeu
         let cables = [];
-        let draggedCable = null;
+        let activeCable = null;
         let cableLines = [];
+        let startX, startY;
         
         // Initialisation du jeu
         function initGame() {
-            // Réinitialiser l'état
             connectedPairs = 0;
             cables = [];
             cableLines = [];
-            leftColumn.innerHTML = '<h2>Câbles déconnectés</h2>';
-            rightColumn.innerHTML = '<h2>Connecteurs</h2>';
+            leftCables.innerHTML = '';
+            rightConnectors.innerHTML = '';
             messageEl.className = 'message';
             
-            // Mélanger les couleurs pour les deux colonnes
-            const shuffledLeftColors = [...colors].sort(() => Math.random() - 0.5);
-            const shuffledRightColors = [...colors].sort(() => Math.random() - 0.5);
+            // Mélanger les couleurs
+            const shuffledColors = [...colors].sort(() => Math.random() - 0.5);
+            const shuffledConnectors = [...colors].sort(() => Math.random() - 0.5);
             
-            // Créer les câbles et les connecteurs
-            shuffledLeftColors.forEach((color, index) => {
-                // Créer le câble
+            // Créer les câbles
+            shuffledColors.forEach((color, index) => {
                 const cable = document.createElement('div');
                 cable.className = `cable ${color}`;
                 cable.dataset.color = color;
                 cable.dataset.id = index;
-                cable.draggable = true;
                 
-                // Ajouter les événements de glisser-déposer
-                cable.addEventListener('dragstart', handleDragStart);
-                cable.addEventListener('dragend', handleDragEnd);
+                // Événements tactiles
+                cable.addEventListener('touchstart', handleTouchStart);
+                cable.addEventListener('touchmove', handleTouchMove);
+                cable.addEventListener('touchend', handleTouchEnd);
                 
-                // Ajouter au conteneur
                 const socket = document.createElement('div');
                 socket.className = 'cable-socket';
                 socket.appendChild(cable);
-                leftColumn.appendChild(socket);
+                leftCables.appendChild(socket);
                 
-                // Stocker la référence
                 cables.push(cable);
             });
             
-            // Créer les connecteurs dans un ordre mélangé
-            shuffledRightColors.forEach((color, index) => {
-                // Créer le connecteur correspondant
+            // Créer les connecteurs
+            shuffledConnectors.forEach((color, index) => {
                 const connector = document.createElement('div');
                 connector.className = 'cable-socket';
                 connector.dataset.color = color;
                 connector.dataset.id = index;
                 
-                // Ajouter un indicateur de couleur sur le connecteur
-                const colorIndicator = document.createElement('div');
-                colorIndicator.className = `cable ${color}`;
-                colorIndicator.style.cursor = 'default';
-                connector.appendChild(colorIndicator);
+                // Indicateur de couleur
+                const indicator = document.createElement('div');
+                indicator.className = `cable ${color}`;
+                indicator.style.cursor = 'default';
+                connector.appendChild(indicator);
                 
-                // Ajouter les événements de dépôt
-                connector.addEventListener('dragover', handleDragOver);
-                connector.addEventListener('drop', handleDrop);
-                
-                rightColumn.appendChild(connector);
+                rightConnectors.appendChild(connector);
             });
         }
         
-        // Gestionnaires d'événements pour le glisser-déposer
-        function handleDragStart(e) {
-            draggedCable = this;
-            this.classList.add('dragging');
-            e.dataTransfer.setData('text/plain', this.dataset.id);
-        }
-        
-        function handleDragEnd() {
-            this.classList.remove('dragging');
-            draggedCable = null;
-        }
-        
-        function handleDragOver(e) {
+        // Gestion des événements tactiles
+        function handleTouchStart(e) {
             e.preventDefault();
-        }
-        
-        function handleDrop(e) {
-            e.preventDefault();
-            const cableId = e.dataTransfer.getData('text/plain');
-            const cable = cables.find(c => c.dataset.id === cableId);
-            const connector = this;
+            const touch = e.touches[0];
+            activeCable = this;
+            startX = touch.clientX;
+            startY = touch.clientY;
             
-            // Vérifier si la couleur correspond
-            if (cable.dataset.color === connector.dataset.color) {
-                // Créer une ligne entre le câble et le connecteur
-                createCableLine(cable, connector);
-                
-                // Désactiver le câble
-                cable.draggable = false;
-                cable.style.cursor = 'default';
-                
-                // Mettre à jour le compteur
-                connectedPairs++;
-                
-                // Vérifier si le jeu est terminé
-                if (connectedPairs === totalPairs) {
-                    messageEl.textContent = 'Félicitations! Tous les câbles sont connectés!';
-                    messageEl.className = 'message success';
-                    
-                    // Redirection après un délai
-                    setTimeout(() => {
-                        window.location.href = destination;
-                    }, 2000);
-                }
-            } else {
-                // Afficher un message d'erreur
-                messageEl.textContent = 'Mauvaise connexion! Les couleurs ne correspondent pas.';
-                messageEl.className = 'message error';
-                
-                // Masquer le message après 2 secondes et recommencer
-                setTimeout(() => {
-                    messageEl.className = 'message';
-                    initGame();
-                }, 2000);
+            // Créer une copie pour le drag
+            const rect = this.getBoundingClientRect();
+            const clone = this.cloneNode(true);
+            clone.style.position = 'fixed';
+            clone.style.left = `${rect.left}px`;
+            clone.style.top = `${rect.top}px`;
+            clone.style.zIndex = '1000';
+            clone.style.transform = 'scale(1.2)';
+            clone.id = 'dragging-cable';
+            document.body.appendChild(clone);
+            
+            activeCable.style.opacity = '0.5';
+        }
+        
+        function handleTouchMove(e) {
+            if (!activeCable) return;
+            e.preventDefault();
+            const touch = e.touches[0];
+            const clone = document.getElementById('dragging-cable');
+            if (clone) {
+                clone.style.left = `${touch.clientX - 15}px`;
+                clone.style.top = `${touch.clientY - 15}px`;
             }
         }
         
-        // Créer une ligne visuelle entre le câble et le connecteur
+        function handleTouchEnd(e) {
+            if (!activeCable) return;
+            
+            const clone = document.getElementById('dragging-cable');
+            if (clone) {
+                clone.remove();
+            }
+            
+            const touch = e.changedTouches[0];
+            const elements = document.elementsFromPoint(touch.clientX, touch.clientY);
+            const connector = elements.find(el => el.classList.contains('cable-socket') && el.parentElement === rightConnectors);
+            
+            if (connector && activeCable.dataset.color === connector.dataset.color) {
+                // Connexion réussie
+                createCableLine(activeCable, connector);
+                activeCable.style.opacity = '1';
+                activeCable.style.pointerEvents = 'none';
+                
+                connectedPairs++;
+                
+                if (connectedPairs === totalPairs) {
+                    messageEl.textContent = '✅ Câbles connectés! Redirection...';
+                    messageEl.className = 'message success';
+                    setTimeout(() => {
+                        window.location.href = destination;
+                    }, 1500);
+                }
+            } else {
+                // Erreur - recommencer
+                messageEl.textContent = '❌ Mauvaise couleur! Recommencez...';
+                messageEl.className = 'message error';
+                activeCable.style.opacity = '1';
+                
+                setTimeout(() => {
+                    messageEl.className = 'message';
+                    initGame();
+                }, 1500);
+            }
+            
+            activeCable = null;
+        }
+        
         function createCableLine(cable, connector) {
             const line = document.createElement('div');
             line.className = 'cable-line';
             line.style.backgroundColor = cable.dataset.color;
             
-            // Positionner la ligne
             const cableRect = cable.getBoundingClientRect();
             const connectorRect = connector.getBoundingClientRect();
             const containerRect = document.querySelector('.container').getBoundingClientRect();
@@ -335,17 +363,14 @@
             const endX = connectorRect.left + connectorRect.width/2 - containerRect.left;
             const endY = connectorRect.top + connectorRect.height/2 - containerRect.top;
             
-            // Calculer la longueur et l'angle
             const length = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
             const angle = Math.atan2(endY - startY, endX - startX) * 180 / Math.PI;
             
-            // Appliquer les styles
             line.style.width = `${length}px`;
             line.style.left = `${startX}px`;
             line.style.top = `${startY}px`;
             line.style.transform = `rotate(${angle}deg)`;
             
-            // Ajouter la ligne au conteneur
             document.querySelector('.container').appendChild(line);
             cableLines.push(line);
         }
