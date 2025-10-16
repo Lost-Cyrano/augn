@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AUGN Game - Stabilisation du Réacteur</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        
+        body {
+            background-color: #1a1a2e;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 15px;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 100%;
+            background-color: #16213e;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+        
+        h1 {
+            color: #e94560;
+            margin-bottom: 15px;
+            font-size: 1.8rem;
+        }
+        
+        .instructions {
+            background-color: #0f3460;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            line-height: 1.5;
+            font-size: 0.9rem;
+        }
+        
+        .reactor-display {
+            background: linear-gradient(135deg, #0f3460, #1a1a2e);
+            border: 3px solid #e94560;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .pressure-gauge {
+            height: 30px;
+            background: linear-gradient(90deg, #4caf50, #ffeb3b, #e94560);
+            border-radius: 15px;
+            margin-bottom: 15px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .pressure-level {
+            height: 100%;
+            width: 50%;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            transition: width 0.3s ease;
+            position: absolute;
+            right: 0;
+        }
+        
+        .gauge-marks {
+            display: flex;
+            justify-content: space-between;
+            padding: 0 10px;
+            font-size: 0.8rem;
+            color: #ccc;
+        }
+        
+        .slider-container {
+            margin: 20px 0;
+        }
+        
+        .slider {
+            width: 100%;
+            height: 40px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: #0f3460;
+            border-radius: 20px;
+            outline: none;
+        }
+        
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: #e94560;
+            cursor: pointer;
+            border: 3px solid #fff;
+        }
+        
+        .coolant-tanks {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+        }
+        
+        .coolant-tank {
+            width: 60px;
+            height: 100px;
+            background-color: #0f3460;
+            border-radius: 10px;
+            position: relative;
+            overflow: hidden;
+            border: 2px solid #4e9de6;
+        }
+        
+        .coolant-level {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background: linear-gradient(to top, #4e9de6, #6bb5ff);
+            transition: height 0.5s ease;
+        }
+        
+        .tank-label {
+            position: absolute;
+            top: -25px;
+            left: 0;
+            width: 100%;
+            font-size: 0.8rem;
+            color: #ccc;
+        }
+        
+        .stabilization-bar {
+            height: 20px;
+            background-color: #0f3460;
+            border-radius: 10px;
+            margin: 20px 0;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .stability-level {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #e94560, #ff9800, #4caf50);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+        
+        .error-animation {
+            animation: shake 0.5s ease-in-out;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+        
+        .success-pulse {
+            animation: pulse 0.5s ease-in-out 3;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @media (min-width: 768px) {
+            .container {
+                max-width: 500px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Stabilisation du Réacteur</h1>
+        
+        <div class="instructions">
+            <p>👆 Maintenez la pression dans la zone verte en ajustant le régulateur</p>
+        </div>
+        
+        <div class="reactor-display">
+            <div class="pressure-gauge">
+                <div class="pressure-level" id="pressure-level"></div>
+            </div>
+            <div class="gauge-marks">
+                <span>Basse</span>
+                <span>Optimale</span>
+                <span>Critique</span>
+            </div>
+            
+            <div class="slider-container">
+                <input type="range" min="0" max="100" value="50" class="slider" id="pressure-slider">
+            </div>
+            
+            <div class="coolant-tanks">
+                <div class="coolant-tank">
+                    <div class="tank-label">Réservoir A</div>
+                    <div class="coolant-level" id="coolant-a"></div>
+                </div>
+                <div class="coolant-tank">
+                    <div class="tank-label">Réservoir B</div>
+                    <div class="coolant-level" id="coolant-b"></div>
+                </div>
+            </div>
+            
+            <div class="stabilization-bar">
+                <div class="stability-level" id="stability-level"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Récupération de l'URL de destination depuis les paramètres
+        const urlParams = new URLSearchParams(window.location.search);
+        const destination = urlParams.get('d') || 'about:blank';
+        
+        // Éléments du DOM
+        const pressureLevel = document.getElementById('pressure-level');
+        const pressureSlider = document.getElementById('pressure-slider');
+        const coolantA = document.getElementById('coolant-a');
+        const coolantB = document.getElementById('coolant-b');
+        const stabilityLevel = document.getElementById('stability-level');
+        const container = document.querySelector('.container');
+        
+        // État du jeu
+        let targetPressure = 50;
+        let currentStability = 0;
+        let stabilityGoal = 100;
+        let gameActive = true;
+        let isAnimating = false;
+        let lastUpdateTime = 0;
+        let coolantATimer = 0;
+        let coolantBTimer = 0;
+        
+        // Configuration
+        const OPTIMAL_MIN = 40;
+        const OPTIMAL_MAX = 60;
+        const UPDATE_INTERVAL = 100; // ms
+        
+        // Initialisation du jeu
+        function initGame() {
+            targetPressure = 30 + Math.random() * 40;
+            currentStability = 0;
+            gameActive = true;
+            isAnimating = false;
+            
+            // Réinitialiser les affichages
+            pressureLevel.style.width = '50%';
+            pressureSlider.value = '50';
+            stabilityLevel.style.width = '0%';
+            coolantA.style.height = '50%';
+            coolantB.style.height = '50%';
+            
+            // Démarrer la boucle de jeu
+            lastUpdateTime = Date.now();
+            gameLoop();
+            
+            // Changer la pression cible périodiquement
+            setInterval(() => {
+                if (gameActive) {
+                    targetPressure = 20 + Math.random() * 60;
+                }
+            }, 2000);
+        }
+        
+        // Boucle principale du jeu
+        function gameLoop() {
+            if (!gameActive) return;
+            
+            const currentTime = Date.now();
+            const deltaTime = currentTime - lastUpdateTime;
+            
+            if (deltaTime >= UPDATE_INTERVAL) {
+                updateGame();
+                lastUpdateTime = currentTime;
+            }
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Mise à jour de l'état du jeu
+        function updateGame() {
+            const currentPressure = parseInt(pressureSlider.value);
+            const pressureDiff = Math.abs(currentPressure - targetPressure);
+            
+            // Mettre à jour l'affichage de la pression
+            pressureLevel.style.width = `${currentPressure}%`;
+            
+            // Mettre à jour la stabilité
+            if (pressureDiff <= 10) {
+                // Dans la zone optimale
+                currentStability += 2;
+                
+                // Animation de succès occasionnelle
+                if (Math.random() < 0.1) {
+                    container.classList.add('success-pulse');
+                    setTimeout(() => {
+                        container.classList.remove('success-pulse');
+                    }, 500);
+                }
+            } else if (pressureDiff <= 20) {
+                // Zone acceptable
+                currentStability += 1;
+            } else {
+                // Zone dangereuse - perdre de la stabilité
+                currentStability = Math.max(0, currentStability - 3);
+                
+                // Animation d'erreur occasionnelle
+                if (Math.random() < 0.2 && !isAnimating) {
+                    handleError();
+                }
+            }
+            
+            // Limiter la stabilité
+            currentStability = Math.min(stabilityGoal, currentStability);
+            
+            // Mettre à jour la barre de stabilité
+            stabilityLevel.style.width = `${(currentStability / stabilityGoal) * 100}%`;
+            
+            // Gérer les réservoirs de refroidissement
+            updateCoolantTanks();
+            
+            // Vérifier la victoire
+            if (currentStability >= stabilityGoal) {
+                gameActive = false;
+                setTimeout(() => {
+                    window.location.href = destination;
+                }, 1000);
+            }
+        }
+        
+        // Mettre à jour les réservoirs de refroidissement
+        function updateCoolantTanks() {
+            coolantATimer++;
+            coolantBTimer++;
+            
+            // Alterner l'activation des réservoirs
+            if (coolantATimer > 100) {
+                coolantA.style.height = '80%';
+                setTimeout(() => {
+                    coolantA.style.height = '20%';
+                }, 300);
+                coolantATimer = 0;
+            }
+            
+            if (coolantBTimer > 120) {
+                coolantB.style.height = '80%';
+                setTimeout(() => {
+                    coolantB.style.height = '20%';
+                }, 300);
+                coolantBTimer = 0;
+            }
+        }
+        
+        // Gérer les erreurs (pression critique)
+        function handleError() {
+            isAnimating = true;
+            container.classList.add('error-animation');
+            
+            setTimeout(() => {
+                container.classList.remove('error-animation');
+                isAnimating = false;
+            }, 500);
+        }
+        
+        // Événement du slider
+        pressureSlider.addEventListener('input', function(e) {
+            if (!gameActive) return;
+            
+            // Vibration haptique sur mobile
+            if (navigator.vibrate) {
+                navigator.vibrate(10);
+            }
+        });
+        
+        // Empêcher le zoom sur le slider
+        pressureSlider.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+        }, { passive: false });
+        
+        // Démarrer le jeu
+        initGame();
+    </script>
+</body>
+</html>
