@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AUGN Game - Teleporter Synchronization</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        
+        body {
+            background-color: #1a1a2e;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 15px;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 100%;
+            background-color: #16213e;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+        
+        h1 {
+            color: #e94560;
+            margin-bottom: 15px;
+            font-size: 1.8rem;
+        }
+        
+        .instructions {
+            background-color: #0f3460;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            line-height: 1.5;
+            font-size: 0.9rem;
+        }
+        
+        .teleporter-interface {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            margin-bottom: 20px;
+        }
+        
+        .frequency-display {
+            background: linear-gradient(135deg, #0f3460, #1a1a2e);
+            border: 3px solid #4e9de6;
+            border-radius: 15px;
+            padding: 20px;
+            position: relative;
+        }
+        
+        .frequency-bar {
+            height: 40px;
+            background: linear-gradient(90deg, #0f3460, #1a1a2e);
+            border: 2px solid #4e9de6;
+            border-radius: 8px;
+            margin: 10px 0;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .frequency-marker {
+            position: absolute;
+            top: 0;
+            width: 4px;
+            height: 100%;
+            transform: translateX(-50%);
+        }
+        
+        .target-marker {
+            background-color: #ffeb3b;
+            box-shadow: 0 0 15px #ffeb3b;
+        }
+        
+        .current-marker {
+            background-color: #4e9de6;
+            box-shadow: 0 0 15px #4e9de6;
+        }
+        
+        .calibration-controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin: 15px 0;
+        }
+        
+        .calibration-btn {
+            height: 70px;
+            background: linear-gradient(135deg, #0f3460, #1a1a2e);
+            border: 2px solid #4e9de6;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 1.3rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .calibration-btn:active {
+            transform: scale(0.95);
+            background: #4e9de6;
+        }
+        
+        .sync-indicator {
+            height: 25px;
+            background-color: #0f3460;
+            border: 2px solid #4e9de6;
+            border-radius: 12px;
+            margin: 20px 0;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .sync-progress {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #4caf50, #45a049);
+            border-radius: 10px;
+            transition: width 0.3s ease;
+        }
+        
+        .frequency-readout {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #ccc;
+        }
+        
+        .error-animation {
+            animation: shake 0.5s ease-in-out;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+        
+        .success-pulse {
+            animation: pulse 0.5s ease-in-out;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @media (min-width: 768px) {
+            .container {
+                max-width: 500px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Synchronisation de Téléporteur</h1>
+        
+        <div class="instructions">
+            <p>👆 Ajustez la fréquence pour qu'elle corresponde exactement à la cible jaune</p>
+        </div>
+        
+        <div class="teleporter-interface">
+            <div class="frequency-display">
+                <div class="frequency-bar" id="frequency-bar">
+                    <div class="frequency-marker target-marker" id="target-marker"></div>
+                    <div class="frequency-marker current-marker" id="current-marker"></div>
+                </div>
+                <div class="frequency-readout">
+                    <span>Cible: <span id="target-value">0</span>Hz</span>
+                    <span>Actuelle: <span id="current-value">0</span>Hz</span>
+                </div>
+            </div>
+            
+            <div class="calibration-controls">
+                <button class="calibration-btn" data-adjust="-10">-10</button>
+                <button class="calibration-btn" data-adjust="-5">-5</button>
+                <button class="calibration-btn" data-adjust="-1">-1</button>
+                <button class="calibration-btn" data-adjust="+1">+1</button>
+                <button class="calibration-btn" data-adjust="+5">+5</button>
+                <button class="calibration-btn" data-adjust="+10">+10</button>
+            </div>
+            
+            <div class="sync-indicator">
+                <div class="sync-progress" id="sync-progress"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Récupération de l'URL de destination depuis les paramètres
+        const urlParams = new URLSearchParams(window.location.search);
+        const destination = urlParams.get('d') || 'about:blank';
+        
+        // Éléments du DOM
+        const frequencyBar = document.getElementById('frequency-bar');
+        const targetMarker = document.getElementById('target-marker');
+        const currentMarker = document.getElementById('current-marker');
+        const syncProgress = document.getElementById('sync-progress');
+        const targetValue = document.getElementById('target-value');
+        const currentValue = document.getElementById('current-value');
+        const container = document.querySelector('.container');
+        const calibrationBtns = document.querySelectorAll('.calibration-btn');
+        
+        // État du jeu
+        let targetFrequency = 50;
+        let currentFrequency = 0;
+        let syncLevel = 0;
+        let gameActive = true;
+        let isAnimating = false;
+        let syncTimer = null;
+        
+        // Configuration
+        const SYNC_GOAL = 100; // Niveau de synchronisation requis
+        const FREQUENCY_RANGE = 100;
+        
+        // Initialisation du jeu
+        function initGame() {
+            targetFrequency = Math.floor(Math.random() * 80) + 10; // 10-90
+            currentFrequency = Math.floor(Math.random() * 100); // 0-100
+            syncLevel = 0;
+            gameActive = true;
+            
+            if (syncTimer) {
+                clearInterval(syncTimer);
+                syncTimer = null;
+            }
+            
+            updateDisplay();
+            updateSyncProgress();
+        }
+        
+        // Mettre à jour l'affichage
+        function updateDisplay() {
+            const barWidth = frequencyBar.offsetWidth;
+            
+            // Positionner le marqueur cible
+            targetMarker.style.left = `${(targetFrequency / FREQUENCY_RANGE) * 100}%`;
+            
+            // Positionner le marqueur actuel
+            currentMarker.style.left = `${(currentFrequency / FREQUENCY_RANGE) * 100}%`;
+            
+            // Mettre à jour les valeurs numériques
+            targetValue.textContent = targetFrequency;
+            currentValue.textContent = currentFrequency;
+        }
+        
+        // Ajuster la fréquence
+        function adjustFrequency(adjustment) {
+            if (!gameActive || isAnimating) return;
+            
+            currentFrequency = Math.max(0, Math.min(100, currentFrequency + adjustment));
+            updateDisplay();
+            checkSync();
+            
+            // Vibration haptique
+            if (navigator.vibrate) {
+                navigator.vibrate(20);
+            }
+        }
+        
+        // Vérifier la synchronisation
+        function checkSync() {
+            const isPerfectMatch = currentFrequency === targetFrequency;
+            
+            if (isPerfectMatch) {
+                // Synchronisation parfaite - remplir la barre
+                if (!syncTimer) {
+                    syncTimer = setInterval(() => {
+                        syncLevel += 5; // Remplissage rapide quand parfaitement aligné
+                        updateSyncProgress();
+                        
+                        if (syncLevel >= SYNC_GOAL) {
+                            completeGame();
+                        }
+                    }, 100);
+                }
+                
+                // Animation de succès
+                container.classList.add('success-pulse');
+                setTimeout(() => {
+                    container.classList.remove('success-pulse');
+                }, 500);
+            } else {
+                // Pas synchronisé - vider la barre
+                if (syncTimer) {
+                    clearInterval(syncTimer);
+                    syncTimer = null;
+                }
+                syncLevel = 0;
+                updateSyncProgress();
+                
+                // Animation d'erreur si on perd la synchronisation
+                if (syncLevel > 0) {
+                    handleError();
+                }
+            }
+        }
+        
+        // Mettre à jour la barre de progression
+        function updateSyncProgress() {
+            syncProgress.style.width = `${syncLevel}%`;
+        }
+        
+        // Gérer les erreurs
+        function handleError() {
+            isAnimating = true;
+            container.classList.add('error-animation');
+            
+            setTimeout(() => {
+                container.classList.remove('error-animation');
+                isAnimating = false;
+            }, 500);
+        }
+        
+        // Terminer le jeu
+        function completeGame() {
+            gameActive = false;
+            if (syncTimer) {
+                clearInterval(syncTimer);
+            }
+            
+            // Animation de victoire
+            container.classList.add('success-pulse');
+            
+            setTimeout(() => {
+                window.location.href = destination;
+            }, 800);
+        }
+        
+        // Événements des boutons de calibration
+        calibrationBtns.forEach(btn => {
+            btn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                const adjustment = parseInt(btn.dataset.adjust);
+                adjustFrequency(adjustment);
+            }, { passive: false });
+            
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const adjustment = parseInt(btn.dataset.adjust);
+                adjustFrequency(adjustment);
+            });
+        });
+        
+        // Redimensionnement
+        window.addEventListener('resize', updateDisplay);
+        
+        // Empêcher le zoom
+        document.addEventListener('touchstart', function(e) {
+            if (e.target.classList.contains('calibration-btn')) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+        
+        // Démarrer le jeu
+        initGame();
+    </script>
+</body>
+</html>
