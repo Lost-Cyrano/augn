@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AUGN Game - </title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        
+        body {
+            background-color: #1a1a2e;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 15px;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 100%;
+            background-color: #16213e;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+        
+        h1 {
+            color: #e94560;
+            margin-bottom: 15px;
+            font-size: 1.8rem;
+        }
+        
+        .instructions {
+            background-color: #0f3460;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            line-height: 1.5;
+            font-size: 0.9rem;
+        }
+        
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+            aspect-ratio: 1;
+            max-width: 300px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .pad {
+            border-radius: 12px;
+            transition: all 0.2s;
+            border: 3px solid #0f3460;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            user-select: none;
+            cursor: pointer;
+        }
+        
+        .pad.active {
+            transform: scale(1.05);
+            box-shadow: 0 0 25px rgba(255, 255, 255, 0.8);
+            border-color: #fff;
+        }
+        
+        .pad.red { background-color: #e94560; }
+        .pad.blue { background-color: #4e9de6; }
+        .pad.green { background-color: #4caf50; }
+        .pad.yellow { background-color: #ffeb3b; color: #333; }
+        
+        .error-animation {
+            animation: shake 0.5s ease-in-out;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        @media (min-width: 768px) {
+            .container {
+                max-width: 400px;
+            }
+            
+            .game-board {
+                max-width: 350px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Jeu de Mémoire</h1>
+        
+        <div class="instructions">
+            <p>👀 Regardez la séquence, puis 👆 reproduisez-la!</p>
+        </div>
+        
+        <div class="game-board">
+            <div class="pad red" data-color="red">🔴</div>
+            <div class="pad blue" data-color="blue">🔵</div>
+            <div class="pad green" data-color="green">🟢</div>
+            <div class="pad yellow" data-color="yellow">🟡</div>
+        </div>
+    </div>
+
+    <script>
+        // Récupération de l'URL de destination depuis les paramètres
+        const urlParams = new URLSearchParams(window.location.search);
+        const destination = urlParams.get('d') || 'about:blank';
+        
+        // Configuration du jeu
+        const colors = ['red', 'blue', 'green', 'yellow'];
+        let sequence = [];
+        let playerSequence = [];
+        let level = 1;
+        let isPlayerTurn = false;
+        let isAnimating = false;
+        let gameStarted = false;
+        const LEVELS_TO_WIN = 7; // 10 niveaux pour gagner
+        
+        // Éléments du DOM
+        const pads = document.querySelectorAll('.pad');
+        const container = document.querySelector('.container');
+        
+        // Initialisation du jeu
+        function initGame() {
+            sequence = [];
+            playerSequence = [];
+            level = 1;
+            isPlayerTurn = false;
+            isAnimating = false;
+            
+            // Démarrer après un délai
+            setTimeout(() => {
+                nextLevel();
+            }, 1000);
+        }
+        
+        function handlePadInteraction(pad) {
+            // CORRECTION : Vérifier si le jeu est en cours et si c'est au tour du joueur
+            if (!gameStarted || !isPlayerTurn || isAnimating) return;
+            
+            const color = pad.dataset.color;
+            playerSequence.push(color);
+            activatePad(color);
+            
+            const currentIndex = playerSequence.length - 1;
+            
+            if (playerSequence[currentIndex] !== sequence[currentIndex]) {
+                // Erreur
+                handleError();
+                return;
+            }
+            
+            if (playerSequence.length === sequence.length) {
+                // Niveau réussi
+                if (level >= LEVELS_TO_WIN) {
+                    // Victoire - redirection
+                    setTimeout(() => {
+                        window.location.href = destination;
+                    }, 500);
+                } else {
+                    // Niveau suivant
+                    level++;
+                    setTimeout(() => {
+                        nextLevel();
+                    }, 800);
+                }
+            }
+        }
+        
+        function handleError() {
+            isAnimating = true;
+            isPlayerTurn = false;
+            container.classList.add('error-animation');
+            
+            setTimeout(() => {
+                container.classList.remove('error-animation');
+                isAnimating = false;
+                initGame();
+            }, 500);
+        }
+        
+        function nextLevel() {
+            gameStarted = true;
+            isPlayerTurn = false;
+            
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            sequence.push(randomColor);
+            
+            playerSequence = [];
+            playSequence();
+        }
+        
+        function playSequence() {
+            isAnimating = true;
+            let i = 0;
+            
+            const interval = setInterval(() => {
+                if (i >= sequence.length) {
+                    clearInterval(interval);
+                    isAnimating = false;
+                    isPlayerTurn = true;
+                    return;
+                }
+                
+                const color = sequence[i];
+                activatePad(color);
+                i++;
+            }, 800);
+        }
+        
+        function activatePad(color) {
+            const pad = document.querySelector(`.pad.${color}`);
+            pad.classList.add('active');
+            
+            setTimeout(() => {
+                pad.classList.remove('active');
+            }, 400);
+        }
+        
+        // CORRECTION : Utiliser uniquement les événements tactiles pour mobile
+        // et empêcher les déclenchements multiples
+        pads.forEach(pad => {
+            let touchStarted = false;
+            
+            pad.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (!touchStarted) {
+                    touchStarted = true;
+                    handlePadInteraction(pad);
+                    // Réinitialiser après un court délai
+                    setTimeout(() => {
+                        touchStarted = false;
+                    }, 300);
+                }
+            }, { passive: false });
+            
+            // Garder le click pour compatibilité
+            pad.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (!touchStarted) {
+                    touchStarted = true;
+                    handlePadInteraction(pad);
+                    setTimeout(() => {
+                        touchStarted = false;
+                    }, 300);
+                }
+            });
+        });
+        
+        // Démarrer le jeu automatiquement
+        initGame();
+    </script>
+</body>
+</html>
