@@ -288,6 +288,9 @@ function endVote() {
 
 /* === INITIALISATION === */
 window.addEventListener('load', () => {
+  extInput.value = "load";
+  extSend.click();
+  window.parent.postMessage(result, '*');
   players = parsePlayers();
   startJoin();
 });
