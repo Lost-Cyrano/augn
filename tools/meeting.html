@@ -287,13 +287,17 @@ function endVote() {
 }
 
 /* === INITIALISATION === */
-window.addEventListener('load', () => {
+  window.addEventListener('load', () => {
+  // Envoie "load" au parent dès l'ouverture du site
   extInput.value = "load";
   extSend.click();
-  window.parent.postMessage(result, '*');
+  window.parent.postMessage("load", "*");
+
+  // Puis initialisation du jeu
   players = parsePlayers();
   startJoin();
 });
+
 </script>
 </body>
 </html>
