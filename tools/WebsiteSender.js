@@ -1,4 +1,4 @@
-class Extension {
+class WebsiteSender {
     constructor() {
         this.message = "";
     }
